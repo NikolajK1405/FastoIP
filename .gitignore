@@ -1,3 +1,8 @@
+Fasto/Lexer.fs
+Fasto/Parser.fsi
+Fasto/Parser.fs
+Fasto/Parser.fsyacc.output
 .vs/**
 Fasto/obj/**
 Fasto/bin/**
+*.asm
