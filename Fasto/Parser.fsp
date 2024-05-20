@@ -50,12 +50,13 @@ let parse_error_rich =
 %token <Position> LCURLY RCURLY EOF
 
 %nonassoc ELSE IN TRUE FALSE
-%left DEQ LTH
-%right NEGATE NOT
-%left AND
 %left OR
-%left TIMES DIVIDE
+%left AND
+%left DEQ LTH
 %left PLUS MINUS
+%left TIMES DIVIDE
+%right NEGATE NOT 
+
 
 %start Prog
 %type <AbSyn.UntypedProg> Prog

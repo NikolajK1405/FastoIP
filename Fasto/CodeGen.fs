@@ -373,25 +373,19 @@ let rec compileExp  (e      : TypedExp)
       let code1 = compileExp e1 vtable t1
       let code2 = compileExp e2 vtable t2
 
-      let LTrueLabel = newLab "left_true"
-      let RTrueLabel = newLab "right_true"
+      let falseLabel = newLab "false"
       let endLabel   = newLab "end"
 
-      let checkLeft  = [ BNE (t1, Rzero, LTrueLabel)
-                       ; LI (place, 0)
-                       ; J (endLabel)
-                       ; LABEL LTrueLabel
-                       ]
+      let check x    = [ BEQ (x, Rzero, falseLabel)]
 
-      let checkRight = [ BNE (t2, Rzero, RTrueLabel)
-                       ; LI (place, 0)
+      let determine  = [ LI (place, 1)
                        ; J (endLabel)
-                       ; LABEL RTrueLabel
-                       ; LI (place, 1)
+                       ; LABEL falseLabel
+                       ; LI (place, 0)
                        ; LABEL endLabel
                        ]
 
-      code1 @ checkLeft @ code2 @ checkRight
+      code1 @ check t1 @ code2 @ check t2 @ determine
 
   | Or (e1, e2, pos) ->
       let t1 = newReg "or_L"
@@ -399,25 +393,19 @@ let rec compileExp  (e      : TypedExp)
       let code1 = compileExp e1 vtable t1
       let code2 = compileExp e2 vtable t2
 
-      let LTrueLabel = newLab "left_true"
-      let RTrueLabel = newLab "right_true"
+      let trueLabel  = newLab "true"
       let endLabel   = newLab "end"
 
-      let checkLeft  = [ BEQ (t1, Rzero, LTrueLabel)
-                       ; LI (place, 1)
-                       ; J (endLabel)
-                       ; LABEL LTrueLabel
-                       ]
+      let check x    = [ BNE (x, Rzero, trueLabel)]
 
-      let checkRight = [ BEQ (t2, Rzero, RTrueLabel)
-                       ; LI (place, 1)
+      let determine  = [ LI (place, 0)
                        ; J (endLabel)
-                       ; LABEL RTrueLabel
-                       ; LI (place, 0)
+                       ; LABEL trueLabel
+                       ; LI (place, 1)
                        ; LABEL endLabel
                        ]
 
-      code1 @ checkLeft @ code2 @ checkRight
+      code1 @ check t1 @ code2 @ check t2 @ determine
 
   (* Indexing:
      1. generate code to compute the index

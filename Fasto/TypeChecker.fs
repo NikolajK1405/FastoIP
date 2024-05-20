@@ -148,13 +148,13 @@ and checkExp  (ftab : FunTable)
     | Not (e1, pos) ->
         let e_dec = checkExp ftab vtab e1
         let (t, exp) = e_dec
-        if t = Bool then (Bool, exp)
+        if t = Bool then (Bool, Not (exp, pos))
         else reportTypeWrong "argument of not operator" Bool t pos
 
     | Negate (e1, pos) ->
         let e_dec = checkExp ftab vtab e1
         let (t, exp) = e_dec
-        if t = Int then (Int, exp)
+        if t = Int then (Int, Negate (exp, pos))
         else reportTypeWrong "argument of negate operator" Int t pos
 
     (* The types for e1, e2 must be the same. The result is always a Bool. *)
