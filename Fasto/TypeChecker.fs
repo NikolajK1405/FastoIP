@@ -139,11 +139,11 @@ and checkExp  (ftab : FunTable)
 
     | And (e1, e2, pos) ->
         let (e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
-        (Int, And (e1_dec, e2_dec, pos))
+        (Bool, And (e1_dec, e2_dec, pos))
 
     | Or (e1, e2, pos) ->
         let (e1_dec, e2_dec) = checkBinOp ftab vtab (pos, Int, e1, e2)
-        (Int, Or (e1_dec, e2_dec, pos))
+        (Bool, Or (e1_dec, e2_dec, pos))
 
     | Not (e1, pos) ->
         let e_dec = checkExp ftab vtab e1
