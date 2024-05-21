@@ -49,7 +49,7 @@ let rec Declaration (e : UntypedExp) (d : UntypedDec list) p =
 //keywords
 %token <Position> BOOL CHAR ELSE FN FUN IF IN INT LET THEN TRUE FALSE NOT
 //specials
-%token <Position> IOTA LENGTH MAP READ REDUCE WRITE
+%token <Position> IOTA LENGTH MAP READ REDUCE WRITE REPLICATE
 //symbols
 %token <Position> NEGATE TIMES DIVIDE MINUS PLUS DEQ LTH AND OR
 %token <Position> COMMA SEMICOLON EQ ARROW LPAR RPAR LBRACKET RBRACKET
@@ -144,6 +144,8 @@ Exp : NUM            { Constant (IntVal (fst $1), snd $1) }
                      { Map ($3, $5, (), (), $1) }
     | REDUCE LPAR FunArg COMMA Exp COMMA Exp RPAR
                      { Reduce ($3, $5, $7, (), $1) }
+    | REPLICATE LPAR Exp COMMA Exp RPAR
+                     { Replicate ($3, $5, (), $1) }
     | LPAR Exp RPAR  { $2 }
     // TODO: task 1(b): replace this with a more general production
     | LET Decls IN Exp
