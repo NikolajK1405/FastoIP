@@ -168,10 +168,13 @@ let rec compileExp  (e      : TypedExp)
   | Constant (IntVal n, pos) ->
       [ LI (place, n) ] (* assembler will generate appropriate
                            instruction sequence for any value n *)
-  | Constant (BoolVal p, _) ->
+  | Constant (BoolVal p, pos) ->
       (* TODO project task 1: represent `true`/`false` values as `1`/`0` *)
-      failwith "Unimplemented code generation for boolean constants"
+      if p then [LI (place, 1)]
+      else [LI (place, 0)]
+
   | Constant (CharVal c, pos) ->
+
       [ LI (place, int c) ]
 
   (* Create/return a label here, collect all string literals of the program
@@ -239,17 +242,41 @@ let rec compileExp  (e      : TypedExp)
      version, but remember to come back and clean it up later.
      `Not` and `Negate` are simpler; you can use `XORI` for `Not`
   *)
-  | Times (_, _, _) ->
-      failwith "Unimplemented code generation of multiplication"
+  | Times (e1, e2, pos) ->
+      let t1 = newReg "times_L"
+      let t2 = newReg "times_R"
+      let code1 = compileExp e1 vtable t1
+      let code2 = compileExp e2 vtable t2
+      code1 @ code2 @ [MUL (place,t1,t2)]
 
-  | Divide (_, _, _) ->
-      failwith "Unimplemented code generation of division"
+  | Divide (e1, e2, pos) ->
+      let t1 = newReg "divide_L"
+      let t2 = newReg "divide_R"
+      let code1 = compileExp e1 vtable t1
+      let code2 = compileExp e2 vtable t2
 
-  | Not (_, _) ->
-      failwith "Unimplemented code generation of not"
+      let safe_lab = newLab "safe"
+      let line, _ = pos
+      let checkDivZero = [ BNE (t2, Rzero, safe_lab)
+                         ; LI (Ra0, line)
+                         ; LA (Ra1, "m.DivZero")
+                         ; J "p.RuntimeError"
+                         ; LABEL (safe_lab)
+                         ]
+    
+      code1 @ code2 @ checkDivZero @ [DIV (place,t1,t2)]
 
-  | Negate (_, _) ->
-      failwith "Unimplemented code generation of negate"
+  | Not (e1, pos) ->
+      let t1 = newReg "bool_not"
+      let code = compileExp e1 vtable t1
+
+      code @ [XORI (place,t1,1)]
+
+  | Negate (e1, pos) ->
+      let t1 = newReg "int_neg"
+      let code = compileExp e1 vtable t1
+
+      code @ [SUB (place, Rzero, t1)]
 
   | Let (dec, e1, pos) ->
       let (code1, vtable1) = compileDec dec vtable
@@ -340,11 +367,45 @@ let rec compileExp  (e      : TypedExp)
         in `e1 || e2` if the execution of `e1` will evaluate to `true` then
         the code of `e2` must not be executed. Similarly for `And` (&&).
   *)
-  | And (_, _, _) ->
-      failwith "Unimplemented code generation of &&"
+  | And (e1, e2, pos) ->
+      let t1 = newReg "and_L"
+      let t2 = newReg "and_R"
+      let code1 = compileExp e1 vtable t1
+      let code2 = compileExp e2 vtable t2
 
-  | Or (_, _, _) ->
-      failwith "Unimplemented code generation of ||"
+      let falseLabel = newLab "false"
+      let endLabel   = newLab "end"
+
+      let check x    = [ BEQ (x, Rzero, falseLabel)]
+
+      let determine  = [ LI (place, 1)
+                       ; J (endLabel)
+                       ; LABEL falseLabel
+                       ; LI (place, 0)
+                       ; LABEL endLabel
+                       ]
+
+      code1 @ check t1 @ code2 @ check t2 @ determine
+
+  | Or (e1, e2, pos) ->
+      let t1 = newReg "or_L"
+      let t2 = newReg "or_R"
+      let code1 = compileExp e1 vtable t1
+      let code2 = compileExp e2 vtable t2
+
+      let trueLabel  = newLab "true"
+      let endLabel   = newLab "end"
+
+      let check x    = [ BNE (x, Rzero, trueLabel)]
+
+      let determine  = [ LI (place, 0)
+                       ; J (endLabel)
+                       ; LABEL trueLabel
+                       ; LI (place, 1)
+                       ; LABEL endLabel
+                       ]
+
+      code1 @ check t1 @ code2 @ check t2 @ determine
 
   (* Indexing:
      1. generate code to compute the index
@@ -542,8 +603,61 @@ let rec compileExp  (e      : TypedExp)
         If `n` is less than `0` then remember to terminate the program with
         an error -- see implementation of `iota`.
   *)
-  | Replicate (_, _, _, _) ->
-      failwith "Unimplemented code generation of replicate"
+  | Replicate (n_exp, a_exp, tp, (line, _)) ->
+      (* load array size n into size_reg *)
+      let size_reg = newReg "size"
+      let n_code   = compileExp n_exp vtable size_reg
+
+      (* Check that N >= 0 *)
+      let safe_lab = newLab "safe"
+      let checksize = [ BGE (size_reg, Rzero, safe_lab)
+                      ; LI (Ra0, line)
+                      ; LA (Ra1, "m.BadSize")
+                      ; J "p.RuntimeError"
+                      ; LABEL (safe_lab)
+                      ]
+
+      (* Load the expression to be replicated into register elm_reg*)
+      let elm_reg  = newReg "element"
+      let elm_code = compileExp a_exp vtable elm_reg
+
+      (* Call to dynalloc, loads address of header into place *)
+
+      (* Load the position of the first array element into addr_reg *)
+      let addr_reg = newReg "addr"
+      let i_reg = newReg "i"
+      let init_regs   = [ ADDI (addr_reg, place, 4)
+                        ; MV (i_reg, Rzero) ]
+
+      (* Create while (i < n) loop *)
+      let loop_beg = newLab "loop_beg"
+      let loop_end = newLab "loop_end"
+      let loop_header = [ LABEL (loop_beg)
+                        ; BGE (i_reg, size_reg, loop_end)
+                        ]
+
+      (* For the loop body, we need to know the size of the replicate element *)
+      let elmSize = getElemSize tp
+      let loop_replicate, elmSizeImm =
+        match elmSize with
+          | ESByte ->   [ SB (elm_reg, addr_reg, 0) ], 1
+          | ESWord ->   [ SW (elm_reg, addr_reg, 0) ], 4
+
+      (* In the loop footer we update i and the address register *)
+      let loop_footer = [ ADDI (addr_reg, addr_reg, elmSizeImm)
+                        ; ADDI (i_reg, i_reg, 1)
+                        ; J loop_beg
+                        ; LABEL loop_end
+                        ]
+      n_code
+       @ checksize
+       @ elm_code
+       @ dynalloc (size_reg, place, tp)
+       @ init_regs
+       @ loop_header
+       @ loop_replicate
+       @ loop_footer
+
 
   (* TODO project task 2: see also the comment to replicate.
      (a) `filter(f, arr)`:  has some similarity with the implementation of map.

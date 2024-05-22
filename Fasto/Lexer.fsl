@@ -73,6 +73,7 @@ let keyword (s, pos) =
        | "reduce"       -> Parser.REDUCE pos
        | "read"         -> Parser.READ pos
        | "write"        -> Parser.WRITE pos
+       | "replicate"    -> Parser.REPLICATE pos
        | _              -> Parser.ID (s, pos)
 }
 
@@ -106,10 +107,10 @@ rule Token = parse
   | '+'                   { Parser.PLUS   (getPos lexbuf) }
   | '-'                   { Parser.MINUS  (getPos lexbuf) }
   | '*'                   { Parser.TIMES  (getPos lexbuf) }
-  | '/'                   { Parser.DIVIDE (getPos lexbuf) }
-  | '&'                   { Parser.AND    (getPos lexbuf)}
-  | '|'                   { Parser.OR     (getPos lexbuf) }
-  | '~'                   { Parser.NEGATE (getPos lexbuf) }
+  | '/'                   { Parser.DIVIDE  (getPos lexbuf) }
+  | '~'                   { Parser.NEGATE  (getPos lexbuf) }
+  | '&''&'                { Parser.AND  (getPos lexbuf) }
+  | '|''|'                { Parser.OR  (getPos lexbuf) }
   | "=>"                  { Parser.ARROW  (getPos lexbuf) }
   | "=="                  { Parser.DEQ    (getPos lexbuf) }
   | '='                   { Parser.EQ     (getPos lexbuf) }
@@ -121,5 +122,6 @@ rule Token = parse
   | '{'                   { Parser.LCURLY (getPos lexbuf) }
   | '}'                   { Parser.RCURLY (getPos lexbuf) }
   | ','                   { Parser.COMMA  (getPos lexbuf) }
+  | ';'                   { Parser.SEMICOLON  (getPos lexbuf) }
   | eof                   { Parser.EOF    (getPos lexbuf) }
   | _                     { lexerError lexbuf "Illegal symbol in input" }

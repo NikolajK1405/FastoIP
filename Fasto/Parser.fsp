@@ -17,6 +17,12 @@ let parse_error_rich =
       | Some token -> sprintf "at token %A\n" token
   )
 
+let rec Declaration (e : UntypedExp) (d : UntypedDec list) p =
+    match d with
+        | ele :: [] -> Let(ele, e, p)
+        | ele :: rst -> Let(ele, Declaration e rst p, p)
+        | _ -> raise (System.Exception "Bad declaration")
+
 %}
 
 //////////////////////////////////////////////////////////////////////
@@ -41,22 +47,21 @@ let parse_error_rich =
 %token <char * Position> CHARLIT
 %token <string * Position> ID STRINGLIT
 //keywords
-%token <Position> BOOL CHAR ELSE FN FUN IF IN INT LET THEN TRUE FALSE 
+%token <Position> BOOL CHAR ELSE FN FUN IF IN INT LET THEN TRUE FALSE NOT
 //specials
-%token <Position> IOTA LENGTH MAP READ REDUCE WRITE 
+%token <Position> IOTA LENGTH MAP READ REDUCE WRITE REPLICATE
 //symbols
-%token <Position> MINUS PLUS DEQ LTH TIMES DIVIDE AND OR NOT NEGATE
+%token <Position> NEGATE TIMES DIVIDE MINUS PLUS DEQ LTH AND OR
 %token <Position> COMMA SEMICOLON EQ ARROW LPAR RPAR LBRACKET RBRACKET
 %token <Position> LCURLY RCURLY EOF
 
-%nonassoc ELSE IN
-%right NEGATE
-%left NOT
-%left TIMES DIVIDE 
-%left PLUS MINUS
-%left DEQ LTH
-%left AND 
+%nonassoc ELSE IN TRUE FALSE
 %left OR
+%left AND
+%left DEQ LTH
+%left PLUS MINUS
+%left TIMES DIVIDE
+%right NEGATE NOT 
 
 
 %start Prog
@@ -67,6 +72,8 @@ let parse_error_rich =
 %type <AbSyn.UntypedExp> Exp
 %type <AbSyn.UntypedExp list> Exps
 %type <AbSyn.UntypedFunArg> FunArg
+%type <AbSyn.UntypedDec list> Decls
+%type <AbSyn.UntypedDec> Decl
 // TODO: Task 1(b): add any new nonterminals here
 
 %%
@@ -106,17 +113,20 @@ Exp : NUM            { Constant (IntVal (fst $1), snd $1) }
     | STRINGLIT      { StringLit $1 }
     | LCURLY Exps RCURLY
                      { ArrayLit ($2, (), $1) }
+    | TRUE           { Constant (BoolVal true, $1) }  
+    | FALSE          { Constant (BoolVal false, $1) }  
+
     | Exp PLUS  Exp  { Plus ($1, $3, $2) }
     | Exp MINUS Exp  { Minus($1, $3, $2) }
     | Exp TIMES Exp  { Times($1, $3, $2) }
-    | Exp DIVIDE Exp  { Divide($1, $3, $2) }
+    | Exp DIVIDE Exp { Divide($1, $3, $2) }
+    | NEGATE Exp     { Negate($2, $1) }
 
-    | NEGATE Exp  { Negate($2, $1) }
-    | NOT Exp { Not($2, $1) }
-    | Exp AND Exp  { And($1, $3, $2) }
-    | Exp OR Exp  { Or($1, $3, $2) }
-    | Exp DEQ Exp  { Equal($1, $3, $2) }
-    | Exp LTH Exp  { Less ($1, $3, $2) }
+    | Exp DEQ   Exp  { Equal($1, $3, $2) }
+    | Exp LTH   Exp  { Less ($1, $3, $2) }
+    | Exp AND Exp    { And($1, $3, $2) }
+    | Exp OR Exp     { Or($1, $3, $2) }
+    | NOT Exp        { Not($2, $1) }
     | IF Exp THEN Exp ELSE Exp
                      { If ($2, $4, $6, $1) }
     | ID LPAR Exps RPAR
@@ -134,12 +144,21 @@ Exp : NUM            { Constant (IntVal (fst $1), snd $1) }
                      { Map ($3, $5, (), (), $1) }
     | REDUCE LPAR FunArg COMMA Exp COMMA Exp RPAR
                      { Reduce ($3, $5, $7, (), $1) }
+    | REPLICATE LPAR Exp COMMA Exp RPAR
+                     { Replicate ($3, $5, (), $1) }
     | LPAR Exp RPAR  { $2 }
     // TODO: task 1(b): replace this with a more general production
-    | LET ID EQ Exp IN Exp
-                     { Let (Dec (fst $2, $4, $3), $6, $1) }
+    | LET Decls IN Exp
+                     { Declaration $4 $2 $1}
     | ID LBRACKET Exp RBRACKET
                      { Index (fst $1, $3, (), $2) }
+;
+
+Decls : Decl SEMICOLON Decls { $1 :: $3 }
+      | Decl                  { [$1] }
+;
+
+Decl : ID EQ Exp  { Dec ( fst $1, $3, $2) }
 ;
 
 Exps : Exp COMMA Exps { $1 :: $3 }
