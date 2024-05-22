@@ -1,4 +1,3 @@
-
 %{
 
 let p0 = (0,0)
@@ -16,13 +15,6 @@ let parse_error_rich =
       | None -> "At beginning of input\n"
       | Some token -> sprintf "at token %A\n" token
   )
-
-let rec Declaration (e : UntypedExp) (d : UntypedDec list) p =
-    match d with
-        | ele :: [] -> Let(ele, e, p)
-        | ele :: rst -> Let(ele, Declaration e rst p, p)
-        | _ -> raise (System.Exception "Bad declaration")
-
 %}
 
 //////////////////////////////////////////////////////////////////////
@@ -49,7 +41,7 @@ let rec Declaration (e : UntypedExp) (d : UntypedDec list) p =
 //keywords
 %token <Position> BOOL CHAR ELSE FN FUN IF IN INT LET THEN TRUE FALSE NOT
 //specials
-%token <Position> IOTA LENGTH MAP READ REDUCE WRITE REPLICATE
+%token <Position> IOTA LENGTH MAP READ REDUCE WRITE REPLICATE FILTER SCAN
 //symbols
 %token <Position> NEGATE TIMES DIVIDE MINUS PLUS DEQ LTH AND OR
 %token <Position> COMMA SEMICOLON EQ ARROW LPAR RPAR LBRACKET RBRACKET
@@ -146,10 +138,13 @@ Exp : NUM            { Constant (IntVal (fst $1), snd $1) }
                      { Reduce ($3, $5, $7, (), $1) }
     | REPLICATE LPAR Exp COMMA Exp RPAR
                      { Replicate ($3, $5, (), $1) }
+    | FILTER LPAR FunArg COMMA Exp RPAR
+                     { Filter ($3, $5, (), $1) }
+    | SCAN LPAR FunArg COMMA Exp COMMA Exp RPAR
+                     { Scan ($3, $5, $7, (), $1) }
     | LPAR Exp RPAR  { $2 }
-    // TODO: task 1(b): replace this with a more general production
     | LET Decls IN Exp
-                     { Declaration $4 $2 $1}
+                     { List.foldBack(fun d a -> Let(d, a, $1) ) $2 $4}
     | ID LBRACKET Exp RBRACKET
                      { Index (fst $1, $3, (), $2) }
 ;

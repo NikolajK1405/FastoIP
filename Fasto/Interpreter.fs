@@ -280,8 +280,21 @@ let rec evalExp (e : UntypedExp, vtab : VarTable, ftab : FunTable) : Value =
          the value of `a`; otherwise raise an error (containing
          a meaningful message).
   *)
-  | Replicate (_, _, _, _) ->
-        failwith "Unimplemented interpretation of replicate"
+  
+  | Replicate (size, a, tp, pos) ->
+      let sz  = evalExp(size, vtab, ftab)
+      let exp  = evalExp(a, vtab, ftab)
+      match sz with
+          | IntVal n ->
+              if n < 0 then 
+                  let msg = sprintf "Argument of \"replicate\" is negative: %i" n
+                  raise (MyError(msg, pos))
+              match exp with
+                  | IntVal e         -> ArrayVal (List.replicate n exp, Int)
+                  | BoolVal e        -> ArrayVal (List.replicate n exp, Bool)
+                  | CharVal e        -> ArrayVal (List.replicate n exp, Char)
+                  | ArrayVal(arr, t) -> ArrayVal (List.replicate n exp, Array t)
+          | _ -> reportWrongType "argument of \"replicate\"" Int sz pos 
 
   (* TODO project task 2: `filter(p, arr)`
        pattern match the implementation of map:
@@ -291,15 +304,34 @@ let rec evalExp (e : UntypedExp, vtab : VarTable, ftab : FunTable) : Value =
          that the return value is a boolean at all);
        - create an `ArrayVal` from the (list) result of the previous step.
   *)
-  | Filter (_, _, _, _) ->
-        failwith "Unimplemented interpretation of filter"
+  | Filter (f, a, _, pos) ->
+      let arr  = evalExp(a, vtab, ftab)
+      match arr with
+          | ArrayVal(lst, tp) ->
+              let filt = List.filter (fun x -> 
+                  match evalFunArg(f, vtab, ftab, pos, [x]) with
+                      | BoolVal b -> b
+                      | _ -> raise (MyError("Argument 1 of filter must have 
+                                             the signature 'a -> bool", pos))) lst
+              ArrayVal (filt, tp)
+          | _ -> reportNonArray "2nd argument of \"filter\"" arr pos  
 
   (* TODO project task 2: `scan(f, ne, arr)`
      Implementation similar to reduce, except that it produces an array
      of the same type and length to the input array `arr`.
   *)
-  | Scan (_, _, _, _, _) ->
-        failwith "Unimplemented interpretation of scan"
+  | Scan (f, ne, exp, _, pos) ->
+      let acc  = evalExp(ne, vtab, ftab)
+      let arr  = evalExp(exp, vtab, ftab)
+      match arr with
+          | ArrayVal(lst,t) -> 
+              if not(typeMatch (t, acc)) then
+                  reportWrongType "2nd argument of \"scan\"" t acc pos  
+              let res = List.fold(fun (a, aList) ele -> 
+                  let newA = evalFunArg(f, vtab, ftab, pos, [a; ele])
+                  (newA, aList @ [newA])) (acc, []) lst
+              ArrayVal(snd res, t)
+          | _ ->  reportNonArray "3nd argument of \"scan\"" arr pos 
 
   | Read (t,p) ->
         let str = Console.ReadLine()
