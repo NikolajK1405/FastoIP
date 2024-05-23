@@ -308,7 +308,7 @@ and checkExp  (ftab : FunTable)
         if n_type <> Int then
           reportTypeWrong "argument of replicate length" Int n_type pos
         (Array a_type, Replicate (n_dec, a_dec, a_type, pos))
-        
+
 
     (* TODO project task 2: Hint for `filter(f, arr)`
         Look into the type-checking lecture slides for the type rule of `map`
@@ -323,27 +323,27 @@ and checkExp  (ftab : FunTable)
         let (arr_type, arr_exp_dec) = checkExp ftab vtab arr_exp
         let elem_type =
             match arr_type with
-                | Array t -> t
-                | _ -> reportTypeWrongKind "second argument of filter" "array" arr_type pos
+              | Array t -> t
+              | _ -> reportTypeWrongKind "second argument of filter" "array" arr_type pos
         let (f', f_res_type, f_arg_type) =
             match checkFunArg ftab vtab pos f with
-                | (f', res, [a1]) -> (f', res, a1)
-                | (_, res, args) ->
-                    reportArityWrong "first argument of filter" 1 (args,res) pos
+              | (f', res, [a1]) -> (f', res, a1)
+              | (_, res, args) ->
+                   reportArityWrong "first argument of filter" 1 (args,res) pos
         if elem_type <> f_arg_type then
             reportTypesDifferent "function-argument and array-element types in filter"
-                                f_arg_type elem_type pos
+                               f_arg_type elem_type pos
         if f_res_type <> Bool then
             reportTypeWrongKind "return type of predicate" "bool" f_res_type pos
-
+    
         (Array elem_type, Filter (f', arr_exp_dec, elem_type, pos))
 
-(* TODO project task 2: `scan(f, ne, arr)`
-    Hint: Implementation is very similar to `reduce(f, ne, arr)`.
-          (The difference between `scan` and `reduce` is that
-          scan's return type is the same as the type of `arr`,
-          while reduce's return type is that of an element of `arr`).
-*)
+    (* TODO project task 2: `scan(f, ne, arr)`
+        Hint: Implementation is very similar to `reduce(f, ne, arr)`.
+              (The difference between `scan` and `reduce` is that
+              scan's return type is the same as the type of `arr`,
+              while reduce's return type is that of an element of `arr`).
+    *)
     | Scan (f, ne_exp, arr_exp, _, pos) ->
         let (ne_type, ne_exp_dec) = checkExp ftab vtab ne_exp
         let (arr_type, arr_exp_dec) = checkExp ftab vtab arr_exp
