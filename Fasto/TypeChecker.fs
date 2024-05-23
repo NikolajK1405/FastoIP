@@ -331,10 +331,10 @@ and checkExp  (ftab : FunTable)
               | (_, res, args) ->
                    reportArityWrong "first argument of filter" 1 (args,res) pos
         if elem_type <> f_arg_type then
-          reportTypesDifferent "function-argument and array-element types in filter"
+            reportTypesDifferent "function-argument and array-element types in filter"
                                f_arg_type elem_type pos
         if f_res_type <> Bool then
-          reportTypeWrongKind "return type of predicate" "bool" f_res_type pos
+            reportTypeWrongKind "return type of predicate" "bool" f_res_type pos
     
         (Array elem_type, Filter (f', arr_exp_dec, elem_type, pos))
 

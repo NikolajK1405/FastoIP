@@ -1,0 +1,4 @@
+
+fun int main() =
+  let x = 7; y = 3; z = 2 in 
+  write(y+3)
