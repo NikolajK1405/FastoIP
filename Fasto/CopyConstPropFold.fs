@@ -30,11 +30,12 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 exists and if so, it should replace the current expression
                 with the variable or constant to be propagated.
             *)
-            let v = SymTab.lookup name vtable
+            let lst = SymTab.toList vtable
+            let v = List.tryFind (fun (var,elm) -> var = name) lst
             match v with
-                | None -> raise (MyError("Unknown variable "+name, pos))
-                | Some x -> 
-                    match x with
+                | None -> Var (name, pos)
+                | Some (var, ele) -> 
+                    match ele with
                         | ConstProp y  -> Constant (y,pos)
                         | VarProp y -> copyConstPropFoldExp vtable (Var (y, pos))
 
@@ -46,23 +47,17 @@ let rec copyConstPropFoldExp (vtable : VarTable)
             (*  The errors for type checking index and array are there to prevent warnings.
                 The type-checker catches those errors and 2/3 of these errors will never print*)
             let ind = copyConstPropFoldExp vtable ei
-            let i = 
-                match ind with
-                    | (Constant(IntVal index, p1)) -> index
-                    | _ -> let msg = "Type mismatch in indexing expression: 
-                                      expected Int, but got something else."
-                           raise (MyError(msg, pos))
-            let arr = SymTab.lookup name vtable
-            let lst = 
-                match arr with
-                    | (Some (ConstProp (ArrayVal(list, tp)))) -> list
-                    | _ -> let msg = sprintf "Cannot index through a non-array: %A" arr
-                           raise (MyError(msg, pos))
-            let len = List.length lst
-            if 0 <= i && i < len then 
-                Constant (lst.Item i, pos)
-            else let msg = sprintf "Array index out of bounds! Array length: %i, index: %i" len i
-                 raise (MyError( msg, pos ))
+            match ind with
+                | (Constant(IntVal index, p1)) -> 
+                    let arr = SymTab.lookup name vtable
+                    match arr with
+                    | (Some (ConstProp (ArrayVal(list, tp)))) -> 
+                        let len = List.length list
+                        if 0 <= index && index < len then 
+                            Constant (list.Item index, pos)
+                        else Index (name, ei, t, pos)
+                    | _ -> Index (name, ei, t, pos)
+                | _ -> Index (name, ei, t, pos)
         | Let (Dec (name, ed, decpos), body, pos) ->
             let ed' = copyConstPropFoldExp vtable ed
             match ed' with
