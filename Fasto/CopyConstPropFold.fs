@@ -14,8 +14,6 @@ type Propagatee =
     ConstProp of Value
   | VarProp   of string
 
-exception MyError of string * Position
-
 type VarTable = SymTab.SymTab<Propagatee>
 
 let rec copyConstPropFoldExp (vtable : VarTable)
@@ -30,15 +28,11 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 exists and if so, it should replace the current expression
                 with the variable or constant to be propagated.
             *)
-            let lst = SymTab.toList vtable
-            let v = List.tryFind (fun (var,elm) -> var = name) lst
+            let v = SymTab.lookup name vtable
             match v with
                 | None -> Var (name, pos)
-                | Some (var, ele) -> 
-                    match ele with
-                        | ConstProp y  -> Constant (y,pos)
-                        | VarProp y -> copyConstPropFoldExp vtable (Var (y, pos))
-
+                | Some (ConstProp ele) -> Constant (ele,pos)
+                | Some (VarProp ele) -> Var (ele, pos)
         | Index (name, ei, t, pos) ->
             (* TODO project task 3:
                 Should probably do the same as the `Var` case, for
@@ -48,16 +42,17 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 The type-checker catches those errors and 2/3 of these errors will never print*)
             let ind = copyConstPropFoldExp vtable ei
             match ind with
-                | (Constant(IntVal index, p1)) -> 
+                | (Constant(IntVal index, p1)) ->
                     let arr = SymTab.lookup name vtable
                     match arr with
                     | (Some (ConstProp (ArrayVal(list, tp)))) -> 
                         let len = List.length list
                         if 0 <= index && index < len then 
-                            Constant (list.Item index, pos)
+                            Constant (list.[index], pos)
                         else Index (name, ei, t, pos)
                     | _ -> Index (name, ei, t, pos)
-                | _ -> Index (name, ei, t, pos)
+                | _ -> 
+                    Index (name, ei, t, pos)
         | Let (Dec (name, ed, decpos), body, pos) ->
             let ed' = copyConstPropFoldExp vtable ed
             match ed' with
@@ -93,9 +88,11 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                         restructured, semantically-equivalent expression:
                                 `let x = e1 in let y = e2 in e3`
                     *)
+
+                    // Causes inline-map.fo to fail
                     let newBody = Let (Dec (name, e2, decpos2), body, pos2)
                     let newExp = Let (Dec (name2, e1, decpos), newBody, pos)
-                    copyConstPropFoldExp vtable newExp
+                    newExp
                     
                 | _ -> (* Fallthrough - for everything else, do nothing *)
                     let body' = copyConstPropFoldExp vtable body
@@ -128,7 +125,9 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     Constant (BoolVal false, pos)
                 | (_, Constant (BoolVal false, _)) -> 
                     Constant (BoolVal false, pos)
-                | _ -> Constant (BoolVal true, pos)
+                | (Constant (BoolVal true, _), Constant (BoolVal true, pos)) -> 
+                    Constant (BoolVal true, pos)
+                | _ -> e
         | Constant (x,pos) -> Constant (x,pos)
         | StringLit (x,pos) -> StringLit (x,pos)
         | ArrayLit (es, t, pos) ->
@@ -226,7 +225,9 @@ let rec copyConstPropFoldExp (vtable : VarTable)
             match (e1', e2') with
                 | (Constant (BoolVal false, _), Constant (BoolVal false, _)) ->
                     Constant (BoolVal false, pos)
-                | _ -> Constant (BoolVal true, pos)
+                | (Constant (BoolVal x, _), Constant (BoolVal y, _)) -> 
+                    Constant (BoolVal true, pos)
+                | _ -> e
         | Not (e0, pos) ->
             let e0' = copyConstPropFoldExp vtable e0
             match e0' with
