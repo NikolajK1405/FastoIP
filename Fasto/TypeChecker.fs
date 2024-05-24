@@ -365,7 +365,7 @@ and checkExp  (ftab : FunTable)
         if f_res_type <> elem_type then
             reportTypesDifferent "return type of predicate and array-element types in scan" 
                                 f_res_type elem_type pos
-        if ne_type <> elem_type then 
+        if ne_type <> elem_type then
             reportTypesDifferent "accumilator type and array-element types in scan" 
                                 ne_type elem_type pos
         (Array elem_type, Scan (f', ne_exp_dec, arr_exp_dec, elem_type, pos))

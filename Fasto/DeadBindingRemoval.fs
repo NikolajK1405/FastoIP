@@ -68,7 +68,7 @@ let rec removeDeadBindingsInExp (e : TypedExp) : (bool * DBRtab * TypedExp) =
                         you need to record it in a new symbol table.
                   - 3rd element of the tuple: should be the optimised expression.
             *)
-            failwith "Unimplemented removeDeadBindingsInExp for Var"
+            (false, SymTab.fromList [(name, ())], Var (name, pos))
         | Plus (x, y, pos) ->
             let (xios, xuses, x') = removeDeadBindingsInExp x
             let (yios, yuses, y') = removeDeadBindingsInExp y
@@ -118,7 +118,10 @@ let rec removeDeadBindingsInExp (e : TypedExp) : (bool * DBRtab * TypedExp) =
                         expression `e` and to propagate its results (in addition
                         to recording the use of `name`).
             *)
-            failwith "Unimplemented removeDeadBindingsInExp for Index"
+            let (ios, uses, e') = removeDeadBindingsInExp e
+            (ios,
+             SymTab.bind name () uses,
+             Index (name, e', t, pos))
 
         | Let (Dec (name, e, decpos), body, pos) ->
             (* Task 3, Hints for the `Let` case:
@@ -144,7 +147,16 @@ let rec removeDeadBindingsInExp (e : TypedExp) : (bool * DBRtab * TypedExp) =
                     Let-expression.
 
             *)
-            failwith "Unimplemented removeDeadBindingsInExp for Let"
+            let (eios, euses, e') = removeDeadBindingsInExp e
+            let (bios, buses, b') = removeDeadBindingsInExp body
+            
+            if isUsed name buses || eios 
+            then (* cannot remove the ’let name = e’ binding *)
+                (eios || bios, 
+                 SymTab.remove name buses |> SymTab.combine euses,
+                 Let (Dec (name, e', decpos), b', pos))
+            else (* can remove the ’let name = e’ binding *)
+                 (bios, buses, b')
         | Iota (e, pos) ->
             let (io, uses, e') = removeDeadBindingsInExp e
             (io,
