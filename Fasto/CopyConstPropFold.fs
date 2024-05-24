@@ -133,7 +133,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     Constant (BoolVal false, pos)
                 | (_, Constant (BoolVal false, _)) -> 
                     Constant (BoolVal false, pos)
-                | _ -> Constant Constant (BoolVal true, pos)
+                | _ -> Constant (BoolVal true, pos)
         | Constant (x,pos) -> Constant (x,pos)
         | StringLit (x,pos) -> StringLit (x,pos)
         | ArrayLit (es, t, pos) ->
@@ -221,8 +221,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
             match (e1', e2') with
             | (Constant (IntVal 0, _), Constant (IntVal y, _)) when y <> 0 ->
                 Constant (IntVal 0, pos)
-            | (_, Constant (IntVal 1, _)) ->
-                Constant (e1', pos)
+            | (_, Constant (IntVal 1, _)) -> e1'
             | (Constant (IntVal x, _), Constant (IntVal y, _)) when y <> 0 ->
                     Constant (IntVal (x / y), pos)
             | _ -> Divide (e1', e2', pos)
