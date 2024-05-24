@@ -30,15 +30,11 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 exists and if so, it should replace the current expression
                 with the variable or constant to be propagated.
             *)
-            let lst = SymTab.toList vtable
-            let v = List.tryFind (fun (var,elm) -> var = name) lst
-            match v with
-                | None -> Var (name, pos)
-                | Some (var, ele) -> 
-                    match ele with
-                        | ConstProp y  -> Constant (y,pos)
-                        | VarProp y -> copyConstPropFoldExp vtable (Var (y, pos))
-
+            match SymTab.lookup name vtable with 
+            | Some (VarProp x) -> Var (x, pos)
+            | Some (ConstProp x) -> Constant(x, pos)
+            | None -> e
+            
         | Index (name, ei, t, pos) ->
             (* TODO project task 3:
                 Should probably do the same as the `Var` case, for
