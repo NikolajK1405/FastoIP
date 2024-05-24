@@ -729,7 +729,6 @@ let rec compileExp  (e      : TypedExp)
        @ loop_footer 
        @ [SW (cnt_reg, place, 0)] (* change size of array *)
 
-
   (* TODO project task 2: see also the comment to replicate.
      `scan(f, ne, arr)`: you can inspire yourself from the implementation of
         `reduce`, but in the case of `scan` you will need to also maintain
@@ -998,7 +997,7 @@ let compile (funs : TypedProg) : Instruction list =
         LABEL "m.BadSize";
         ASCIIZ "negative array size";
         LABEL "m.BadIndex";
-        ASCIIZ "array index out of bounds"
+        ASCIIZ "array index out of bounds";
         LABEL "m.DivZero";
         ASCIIZ "division by zero"
        ]
