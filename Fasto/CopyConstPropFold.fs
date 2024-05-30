@@ -92,7 +92,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     // Causes inline-map.fo to fail
                     let newBody = Let (Dec (name, e2, decpos2), body, pos2)
                     let newExp = Let (Dec (name2, e1, decpos), newBody, pos)
-                    newExp
+                    copyConstPropFoldExp vtable newExp
                     
                 | _ -> (* Fallthrough - for everything else, do nothing *)
                     let body' = copyConstPropFoldExp vtable body
