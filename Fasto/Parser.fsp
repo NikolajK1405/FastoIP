@@ -17,23 +17,6 @@ let parse_error_rich =
   )
 %}
 
-//////////////////////////////////////////////////////////////////////
-// TODO: Add new (lexer) token definitions:
-//
-//   TODO: project task 1 :
-//     - multiplication (*), division (/), numerical negation (~), 
-//       logical negation (not), logical and (&&), logical or (||),
-//       boolean literals (true, false)
-//     - add the required precedence and associativity rules for
-//       *, /, ~, not, &&, ||
-//     - generalize the syntax of let-expressions to allow
-//       multiple variable declarations
-//
-//   TODO: project task 2: replicate, filter, scan 
-//
-//   TODO: project task 4: array comprehension 
-//////////////////////////////////////////////////////////////////////
-
 //information-carrying tokens
 %token <int * Position> NUM
 %token <char * Position> CHARLIT
@@ -66,7 +49,6 @@ let parse_error_rich =
 %type <AbSyn.UntypedFunArg> FunArg
 %type <AbSyn.UntypedDec list> Decls
 %type <AbSyn.UntypedDec> Decl
-// TODO: Task 1(b): add any new nonterminals here
 
 %%
 
@@ -93,11 +75,6 @@ Params : Type ID COMMA Params
                        { Param (fst $2, $1) :: $4 }
        | Type ID       { Param (fst $2, $1) :: [] }
 ;
-
-///////////////////////////////////////////////////////
-// TODO: project tasks 1,2,4: 
-//       add grammer rules for the new expressions
-///////////////////////////////////////////////////////
 
 Exp : NUM            { Constant (IntVal (fst $1), snd $1) }
     | CHARLIT        { Constant (CharVal (fst $1), snd $1) }

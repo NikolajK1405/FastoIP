@@ -235,13 +235,6 @@ let rec compileExp  (e      : TypedExp)
       let code2 = compileExp e2 vtable t2
       code1 @ code2 @ [SUB (place,t1,t2)]
 
-  (* TODO project task 1:
-     Look in `AbSyn.fs` for the expression constructors `Times`, ...
-     `Times` is very similar to `Plus`/`Minus`.
-     For `Divide`, you may ignore division by zero for a quick first
-     version, but remember to come back and clean it up later.
-     `Not` and `Negate` are simpler; you can use `XORI` for `Not`
-  *)
   | Times (e1, e2, pos) ->
       let t1 = newReg "times_L"
       let t2 = newReg "times_R"
@@ -360,13 +353,6 @@ let rec compileExp  (e      : TypedExp)
       let code2 = compileExp e2 vtable t2
       code1 @ code2 @ [SLT (place,t1,t2)]
 
-  (* TODO project task 1:
-        Look in `AbSyn.fs` for the expression constructors of `And` and `Or`.
-        The implementation of `And` and `Or` is more complicated than `Plus`
-        because you need to ensure the short-circuit semantics, e.g.,
-        in `e1 || e2` if the execution of `e1` will evaluate to `true` then
-        the code of `e2` must not be executed. Similarly for `And` (&&).
-  *)
   | And (e1, e2, pos) ->
       let t1 = newReg "and_L"
       let t2 = newReg "and_R"
@@ -578,31 +564,6 @@ let rec compileExp  (e      : TypedExp)
          ; LABEL loop_end
          ]
 
-  (* TODO project task 2:
-        `replicate (n, a)`
-        `filter (f, arr)`
-        `scan (f, ne, arr)`
-     Look in `AbSyn.fs` for the shape of expression constructors
-        `Replicate`, `Filter`, `Scan`.
-     General Hint: write down on a piece of paper the C-like pseudocode
-        for implementing them, then translate that to RiscV pseudocode.
-     To allocate heap space for an array you may use `dynalloc` defined
-        above. For example, if `sz_reg` is a register containing an integer `n`,
-        and `ret_type` is the element-type of the to-be-allocated array, then
-        `dynalloc (sz_reg, arr_reg, ret_type)` will alocate enough space for
-        an n-element array of element-type `ret_type` (including the first
-        word that holds the length, and the necessary allignment padding), and
-        will place in register `arr_reg` the start address of the new array.
-        Since you need to allocate space for the result arrays of `Replicate`,
-        `Map` and `Scan`, then `arr_reg` should probably be `place` ...
-
-     `replicate(n,a)`: You should allocate a new (result) array, and execute a
-        loop of count `n`, in which you store the value hold into the register
-        corresponding to `a` into each memory location corresponding to an
-        element of the result array.
-        If `n` is less than `0` then remember to terminate the program with
-        an error -- see implementation of `iota`.
-  *)
   | Replicate (n_exp, a_exp, tp, (line, _)) ->
       (* load array size n into size_reg *)
       let size_reg = newReg "size"
@@ -655,22 +616,6 @@ let rec compileExp  (e      : TypedExp)
        @ loop_replicate
        @ loop_footer
 
-
-  (* TODO project task 2: see also the comment to replicate.
-     (a) `filter(f, arr)`:  has some similarity with the implementation of map.
-     (b) Use `applyFunArg` to call `f(a)` in a loop, for every element `a` of `arr`.
-     (c) If `f(a)` succeeds (result in the `true` value) then (and only then):
-          - set the next element of the result array to `a`, and
-          - increment a counter (initialized before the loop)
-     (d) It is useful to maintain two array iterators: one for the input array `arr`
-         and one for the result array. (The latter increases slower because
-         some of the elements of the input array are skipped because they fail
-         under the predicate).
-     (e) The last step (after the loop writing the elments of the result array)
-         is to update the logical size of the result array to the value of the
-         counter computed in step (c). You do this of course with a
-         `SW(counter_reg, place, 0)` instruction.
-  *)
   | Filter (pred, arr_exp, tp, pos) ->
       let size_reg = newReg "size"    (* size of input and output array *)
       let arr_reg  = newReg "arr"     (* address of array *)
@@ -729,13 +674,6 @@ let rec compileExp  (e      : TypedExp)
        @ loop_footer 
        @ [SW (cnt_reg, place, 0)] (* change size of array *)
 
-  (* TODO project task 2: see also the comment to replicate.
-     `scan(f, ne, arr)`: you can inspire yourself from the implementation of
-        `reduce`, but in the case of `scan` you will need to also maintain
-        an iterator through the result array, and write the accumulator in
-        the current location of the result iterator at every iteration of
-        the loop.
-  *)
   | Scan (binop, acc_exp, arr_exp, tp, pos) ->
       let arr_reg  = newReg "arr"   (* address of array *)
       let acc_reg  = newReg "acc"   (* accumulator *)
