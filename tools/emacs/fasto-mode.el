@@ -30,7 +30,7 @@
 
 ;;; Basics
 
-(require 'cl) ; `some'
+(require 'cl-lib) ;;(require 'cl) ; `some'
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.fo\\'" . fasto-mode))
