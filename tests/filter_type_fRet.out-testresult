@@ -1,0 +1,1 @@
+Type error: Type mismatch in function body: expected bool, but got int at line 5, column 10
