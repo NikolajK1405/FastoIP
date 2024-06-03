@@ -1,0 +1,7 @@
+fun int read_int(int i) = read(int)
+
+fun int main() =
+  let x = map(read_int, iota(6)) in
+  let y = reduce (fn int (int a, int b) => a * b, 1, x) in
+  let t = write(y) in
+  0
