@@ -1,0 +1,6 @@
+fun bool main() =
+  let x = true in
+  let y = true in
+  let z = false in
+  let a = false in
+  write(a && (z && (x && y)))

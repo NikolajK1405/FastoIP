@@ -28,17 +28,10 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 | Some (ConstProp ele) -> Constant (ele,pos)
                 | Some (VarProp ele) -> Var (ele, pos)
         | Index (name, ei, t, pos) ->
-            let ind = copyConstPropFoldExp vtable ei
-            match ind with
-                | (Constant(IntVal index, _)) ->
-                    let arr = SymTab.lookup name vtable
-                    match arr with
-                    | (Some (ConstProp (ArrayVal(list, tp)))) -> 
-                        let len = List.length list
-                        if 0 <= index && index < len then 
-                            Constant (list[index], pos)
-                        else Index (name, ei, t, pos)
-                    | _ -> Index (name, ind, t, pos)
+            let i = copyConstPropFoldExp vtable ei
+            match i with
+                | (Constant(IntVal _, _)) ->
+                    Index (name, i, t, pos)
                 | _ -> 
                     Index (name, ei, t, pos)
         | Let (Dec (name, ed, decpos), body, pos) ->
@@ -75,12 +68,8 @@ let rec copyConstPropFoldExp (vtable : VarTable)
             let e1' = copyConstPropFoldExp vtable e1
             let e2' = copyConstPropFoldExp vtable e2
             match (e1', e2') with
-                | (Constant (BoolVal false, _), _) -> 
-                    Constant (BoolVal false, pos)
-                | (_, Constant (BoolVal false, _)) -> 
-                    Constant (BoolVal false, pos)
-                | (Constant (BoolVal true, _), Constant (BoolVal true, pos)) -> 
-                    Constant (BoolVal true, pos)
+                | (Constant (BoolVal x, _), Constant (BoolVal y, _)) -> 
+                    Constant (BoolVal (x && y), pos)
                 | _ -> And (e1', e2', pos)
         | Constant (x,pos) -> Constant (x,pos)
         | StringLit (x,pos) -> StringLit (x,pos)
@@ -181,7 +170,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     Constant (BoolVal false, pos)
                 | (Constant (BoolVal x, _), Constant (BoolVal y, _)) -> 
                     Constant (BoolVal true, pos)
-                | _ -> e
+                | _ -> Or (e1', e2', pos)
         | Not (e0, pos) ->
             let e0' = copyConstPropFoldExp vtable e0
             match e0' with

@@ -1,0 +1,4 @@
+fun bool main() =
+  let x = false in
+  let y = false in
+  write(x && y)

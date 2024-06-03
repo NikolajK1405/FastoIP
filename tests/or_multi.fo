@@ -1,0 +1,6 @@
+fun bool main() =
+  let x = false in
+  let y = true in
+  let z = false in
+  let a = true in
+  write((x || y) || (a || z))
