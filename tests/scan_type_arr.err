@@ -1,0 +1,1 @@
+Type error: Type mismatch in 3rd argument of scan: expected a(n) array type, but got int at line 7, column 11

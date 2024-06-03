@@ -1,0 +1,1 @@
+Type error: Type mismatch in 1st argument and 2nd argument types of predicate in scan: expected equal types, but got int and bool at line 7, column 11
