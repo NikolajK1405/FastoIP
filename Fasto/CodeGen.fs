@@ -645,7 +645,7 @@ let rec compileExp  (e      : TypedExp)
                         ; BGE (i_reg, size_reg, loop_end)
                         ]
       
-      (* map is 'arr[i] = f(old_arr[i])'. *)
+      (* loop body *)
       let elm_size = getElemSize tp
       let loop_filter =
              [ Load elm_size (res_reg, elem_reg, 0)

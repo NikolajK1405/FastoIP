@@ -1,0 +1,9 @@
+fun int f(int a) =
+    let b = a in
+    let a = 4 in // Shadows the previous 'a'.
+    b // Cannot replace 'b' with 'a' now.
+
+fun int main() =
+  let x = read(int) in
+  let t = f(x) in
+  write(t)

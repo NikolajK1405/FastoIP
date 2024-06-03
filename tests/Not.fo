@@ -1,0 +1,6 @@
+fun int main() =
+  let x = not false in
+  let y = not true in
+  let t = write(x) in
+  let p = write(y) in
+  0
