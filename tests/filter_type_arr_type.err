@@ -1,0 +1,1 @@
+Type error: Type mismatch in function-argument and array-element types in filter: expected equal types, but got int and bool at line 12, column 11

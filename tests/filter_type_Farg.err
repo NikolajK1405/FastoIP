@@ -1,0 +1,1 @@
+Type error: Arity mismatch in first argument of filter: expected a function of arity 1, but got int * int -> bool at line 12, column 11

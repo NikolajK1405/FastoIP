@@ -1,0 +1,1 @@
+Type error: Type mismatch in accumilator type and array-element types in scan: expected equal types, but got bool and int at line 7, column 11

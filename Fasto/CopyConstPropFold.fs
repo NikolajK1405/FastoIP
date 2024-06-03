@@ -42,15 +42,15 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                 The type-checker catches those errors and 2/3 of these errors will never print*)
             let ind = copyConstPropFoldExp vtable ei
             match ind with
-                | (Constant(IntVal index, p1)) ->
+                | (Constant(IntVal index, _)) ->
                     let arr = SymTab.lookup name vtable
                     match arr with
                     | (Some (ConstProp (ArrayVal(list, tp)))) -> 
                         let len = List.length list
                         if 0 <= index && index < len then 
-                            Constant (list.[index], pos)
+                            Constant (list[index], pos)
                         else Index (name, ei, t, pos)
-                    | _ -> Index (name, ei, t, pos)
+                    | _ -> Index (name, ind, t, pos)
                 | _ -> 
                     Index (name, ei, t, pos)
         | Let (Dec (name, ed, decpos), body, pos) ->
@@ -65,7 +65,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     *)
                     let newTab = SymTab.bind name (VarProp v) vtable
                     let oBody = copyConstPropFoldExp newTab body
-                    Let (Dec (name, ed, decpos), oBody, pos)
+                    oBody
                 | Constant (c, _) ->
                     (* TODO project task 3:
                         Hint: I have discovered a constant-copy statement `let x = 5`.
@@ -75,7 +75,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     *)
                     let newTab = SymTab.bind name (ConstProp c) vtable
                     let oBody = copyConstPropFoldExp newTab body
-                    Let (Dec (name, ed, decpos), oBody, pos)
+                    oBody
                 | Let (Dec (name2, e1, decpos2), e2, pos2) ->
                     (* TODO project task 3:
                         Hint: this has the structure
@@ -127,7 +127,7 @@ let rec copyConstPropFoldExp (vtable : VarTable)
                     Constant (BoolVal false, pos)
                 | (Constant (BoolVal true, _), Constant (BoolVal true, pos)) -> 
                     Constant (BoolVal true, pos)
-                | _ -> e
+                | _ -> And (e1', e2', pos)
         | Constant (x,pos) -> Constant (x,pos)
         | StringLit (x,pos) -> StringLit (x,pos)
         | ArrayLit (es, t, pos) ->
@@ -231,8 +231,8 @@ let rec copyConstPropFoldExp (vtable : VarTable)
         | Not (e0, pos) ->
             let e0' = copyConstPropFoldExp vtable e0
             match e0' with
-                | Constant (BoolVal true, _) -> Constant (BoolVal false, pos)
-                | _ -> Constant (BoolVal true, pos)
+                | Constant (BoolVal x, _) -> Constant (BoolVal (not x), pos)
+                | _ -> Not (e0', pos)
         | Negate (e0, pos) ->
             let e0' = copyConstPropFoldExp vtable e0
             match e0' with
